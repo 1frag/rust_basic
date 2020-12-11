@@ -50,24 +50,53 @@ fn cmd_dirs() -> String {
     return result;
 }
 
-fn cmd_guess() -> String {
-    let secret_number = rand::thread_rng().gen_range(1, 101);
-    let mut first = true;
+enum AskAnswer {
+    Start,
+    Equals,
+    Less,
+    Greater,
+}
+
+fn user_asker(ans: AskAnswer) -> Option<i32> {
+    match ans {
+        AskAnswer::Start => { println!("Try to guess the number!") }
+        AskAnswer::Equals => {
+            println!("You are right!");
+            return None;
+        }
+        AskAnswer::Less => { println!("The secret number should be less"); }
+        AskAnswer::Greater => { println!("The secret number should be greater"); }
+    }
+
     loop {
         let mut guess = String::new();
-        if first { println!("Try to guess the number!"); first = false; }
-
         io::stdin().read_line(&mut guess).unwrap();
         guess = guess.strip_suffix("\n").unwrap().to_string();
         match guess.parse::<i32>() {
-            Ok(numb) => {
-                if numb == secret_number {
-                    return "You are right!".to_string();
-                }
-                println!("The secret number should be {}", if numb < secret_number {"greater"} else { "less" });
-            },
+            Ok(numb) => { return Some(numb); }
             Err(e) => { println!("Please, input valid number [{}]", e); }
-        };
+        }
+    }
+}
+
+fn cmd_guess(mut ask: impl FnMut(AskAnswer) -> Option<i32>) -> String {
+    let secret_number = rand::thread_rng().gen_range(1, 101);
+    let mut first = true;
+    let mut last_numb = None;
+    loop {
+        if first {
+            last_numb = ask(AskAnswer::Start);
+            first = false;
+        }
+        if last_numb.is_none() { return "".to_string(); };
+
+        if last_numb.unwrap() == secret_number {
+            last_numb = ask(AskAnswer::Equals);
+        } else if last_numb.unwrap() < secret_number {
+            last_numb = ask(AskAnswer::Greater);
+        } else if last_numb.unwrap() > secret_number {
+            last_numb = ask(AskAnswer::Less);
+        }
     }
 }
 
@@ -80,7 +109,7 @@ fn main() {
     } else if args[1] == "dirs" {
         println!("{}", cmd_dirs());
     } else if args[1] == "guess" {
-        println!("{}", cmd_guess());
+        println!("{}", cmd_guess(user_asker));
     } else {
         println!("undefined action for args[0]={}", args[1]);
     }
@@ -88,7 +117,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::{cmd_hello, cmd_sum, cmd_dirs};
+    use crate::{cmd_hello, cmd_sum, cmd_dirs, cmd_guess, AskAnswer};
 
     #[test]
     fn simple_test() {
@@ -117,8 +146,26 @@ mod tests {
 
     #[test]
     fn guess_test() {
-        assert_eq!(
-            cmd_dirs(), "There are 4 directories here:\ntarget\nsrc\n.git\n.idea"
-        );
+        let mut correct = false;
+        let mut left = 1;
+        let mut right = 101;
+        let mut last_asked: Option<i32> = None;
+
+        let test_asker = |ans: AskAnswer| -> Option<i32> {
+            match ans {
+                AskAnswer::Equals => {
+                    correct = true;
+                    return None;
+                },
+                AskAnswer::Less => { right = last_asked.unwrap() - 1 },
+                AskAnswer::Greater => { left = last_asked.unwrap() + 1 },
+                _ => {}
+            };
+            last_asked = Some((left + right) / 2);
+            if left <= right { return last_asked; }
+            return None;
+        };
+        cmd_guess(test_asker);
+        assert_eq!(correct, true);
     }
 }
