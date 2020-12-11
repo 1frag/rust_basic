@@ -1,5 +1,7 @@
 use std::env;
 use std::process::{Command, exit};
+use std::io;
+use rand::Rng;
 
 fn cmd_hello() -> String {
     return "Hello, world!".to_string();
@@ -48,6 +50,27 @@ fn cmd_dirs() -> String {
     return result;
 }
 
+fn cmd_guess() -> String {
+    let secret_number = rand::thread_rng().gen_range(1, 101);
+    let mut first = true;
+    loop {
+        let mut guess = String::new();
+        if first { println!("Try to guess the number!"); first = false; }
+
+        io::stdin().read_line(&mut guess).unwrap();
+        guess = guess.strip_suffix("\n").unwrap().to_string();
+        match guess.parse::<i32>() {
+            Ok(numb) => {
+                if numb == secret_number {
+                    return "You are right!".to_string();
+                }
+                println!("The secret number should be {}", if numb < secret_number {"greater"} else { "less" });
+            },
+            Err(e) => { println!("Please, input valid number [{}]", e); }
+        };
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 || args[1] == "hello" {
@@ -56,6 +79,8 @@ fn main() {
         println!("{}", cmd_sum(args));
     } else if args[1] == "dirs" {
         println!("{}", cmd_dirs());
+    } else if args[1] == "guess" {
+        println!("{}", cmd_guess());
     } else {
         println!("undefined action for args[0]={}", args[1]);
     }
@@ -85,6 +110,13 @@ mod tests {
 
     #[test]
     fn dirs_test() {
+        assert_eq!(
+            cmd_dirs(), "There are 4 directories here:\ntarget\nsrc\n.git\n.idea"
+        );
+    }
+
+    #[test]
+    fn guess_test() {
         assert_eq!(
             cmd_dirs(), "There are 4 directories here:\ntarget\nsrc\n.git\n.idea"
         );
