@@ -21,7 +21,7 @@ fn cmd_sum(args: Vec<String>) -> String {
     return format!("Sum of given numbers is {}", res);
 }
 
-fn cmd_dirs() -> String {
+fn cmd_dirs() -> Vec<String> {
     fn listdir() -> Vec<String> {
         let vec_utf8output = Command::new("sh")
             .args(&["-c", "find -maxdepth 1 -type d"]).output().unwrap().stdout;
@@ -38,16 +38,17 @@ fn cmd_dirs() -> String {
     }
 
     let lst = listdir();
-    let mut result: String = match lst.len() - 2 {
+    let mut result: Vec<String> = Vec::new();
+    println!("{}", match lst.len() - 2 {
         0 => "There is no directories here:".to_string(),
         1 => "There is only directory here:".to_string(),
         _ => format!("There are {} directories here:", lst.len() - 2).to_string(),
-    };
+    });
     for dir_name in lst {
         if dir_name == "." || dir_name == "" { continue; }
-        result.push_str("\n");
-        result.push_str(&dir_name[2..]);
+        result.push(dir_name[2..].to_string());
     }
+    result.sort();
     return result;
 }
 
@@ -123,7 +124,7 @@ fn main() {
     } else if args[1] == "sum" {
         println!("{}", cmd_sum(args));
     } else if args[1] == "dirs" {
-        println!("{}", cmd_dirs());
+        println!("{:?}", cmd_dirs());
     } else if args[1] == "guess" {
         println!("{}", cmd_guess(user_asker));
     } else if args[1] == "primes" {
@@ -158,7 +159,7 @@ mod tests {
     #[test]
     fn dirs_test() {
         assert_eq!(
-            cmd_dirs(), "There are 5 directories here:\ntarget\nsrc\n.git\n.idea\n.github"
+            cmd_dirs(), [".git", ".github", ".idea", "src", "target"]
         );
     }
 
