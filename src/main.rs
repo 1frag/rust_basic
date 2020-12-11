@@ -2,6 +2,7 @@ use std::env;
 use std::process::{Command, exit};
 use std::io;
 use rand::Rng;
+use std::collections::HashSet;
 
 fn cmd_hello() -> String {
     return "Hello, world!".to_string();
@@ -100,6 +101,21 @@ fn cmd_guess(mut ask: impl FnMut(AskAnswer) -> Option<i32>) -> String {
     }
 }
 
+fn cmd_primes(n: i32) -> String {
+    let mut complex: HashSet<i32> = HashSet::new();
+    for i in 2..n {
+        if complex.contains(&i) { continue };
+        for j in (i*i..n).step_by(i as usize) {
+            complex.insert(j);
+        }
+    }
+    let mut primes: HashSet<i32> = HashSet::new();
+    primes.extend(2..n);
+    let mut v = primes.difference(&complex).into_iter().collect::<Vec<_>>();
+    v.sort();
+    return format!("{:?}", v);
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() == 1 || args[1] == "hello" {
@@ -110,6 +126,8 @@ fn main() {
         println!("{}", cmd_dirs());
     } else if args[1] == "guess" {
         println!("{}", cmd_guess(user_asker));
+    } else if args[1] == "primes" {
+        println!("{}", cmd_primes(if args.len() == 3 { args[2].parse().unwrap() } else { 100 }));
     } else {
         println!("undefined action for args[0]={}", args[1]);
     }
@@ -117,7 +135,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::{cmd_hello, cmd_sum, cmd_dirs, cmd_guess, AskAnswer};
+    use crate::{cmd_hello, cmd_sum, cmd_dirs, cmd_guess, AskAnswer, cmd_primes};
 
     #[test]
     fn simple_test() {
@@ -156,9 +174,9 @@ mod tests {
                 AskAnswer::Equals => {
                     correct = true;
                     return None;
-                },
-                AskAnswer::Less => { right = last_asked.unwrap() - 1 },
-                AskAnswer::Greater => { left = last_asked.unwrap() + 1 },
+                }
+                AskAnswer::Less => { right = last_asked.unwrap() - 1 }
+                AskAnswer::Greater => { left = last_asked.unwrap() + 1 }
                 _ => {}
             };
             last_asked = Some((left + right) / 2);
@@ -167,5 +185,12 @@ mod tests {
         };
         cmd_guess(test_asker);
         assert_eq!(correct, true);
+    }
+
+    #[test]
+    fn primes_test() {
+        assert_eq!(
+            cmd_primes(42), "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]"
+        );
     }
 }
