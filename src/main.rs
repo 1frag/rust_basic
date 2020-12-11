@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn dirs_test() {
         assert_eq!(
-            cmd_dirs(), "There are 4 directories here:\ntarget\nsrc\n.git\n.idea"
+            cmd_dirs(), "There are 5 directories here:\ntarget\nsrc\n.git\n.idea\n.github"
         );
     }
 

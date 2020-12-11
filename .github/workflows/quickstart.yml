@@ -3,11 +3,11 @@ name: Rust Example
 on: [push]
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v1
       - uses: icepuma/rust-action@master
         with:
-          args: cd rust_basic && cargo fmt -- --check && cargo clippy -- -Dwarnings && cargo test
+          args: cargo test
