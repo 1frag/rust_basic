@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn dirs_test() {
         assert_eq!(
-            cmd_dirs(), [".git", ".github", ".idea", "src", "target"]
+            cmd_dirs(), ["src"]
         );
     }
 
