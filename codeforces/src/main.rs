@@ -71,9 +71,9 @@ pub mod t_ping_pong {
     use crate::{read_i32, read_vec_i32};
 
     fn solve_one(a: i32, b: i32) -> (i32, i32) {
-        if a == 0 { return (0, b) }
-        if a == 1 && b != 0 { return (0, b) }
-        if b == 0 { return (a, 0) }
+        if a == 0 { return (0, b); }
+        if a == 1 && b != 0 { return (0, b); }
+        if b == 0 { return (a, 0); }
         return (a - 1, b);
     }
 
@@ -83,6 +83,54 @@ pub mod t_ping_pong {
             let inp = read_vec_i32();
             let (a, b) = self::solve_one(inp[0], inp[1]);
             println!("{} {}", a, b);
+        }
+    }
+}
+
+fn vec_is_sorted(a: &Vec<i32>) -> bool {
+    for i in 1..(a.len()) {
+        if a[i] < a[i - 1] { return false; }
+    }
+    true
+}
+
+fn swap_value<'a, T: Clone>(a: &'a mut T, b: &'a mut T) {
+    let tmp = a.clone();
+    *a = b.clone();
+    *b = tmp.clone();
+}
+
+// 1455D
+pub mod sequence_and_swaps {
+    use crate::{read_i32, read_vec_i32, vec_is_sorted, swap_value};
+
+    fn solve_one() -> i32 {
+        let (mut v, mut a) = (read_vec_i32(), read_vec_i32());
+        let (mut sm, mut cnt) = (0, 0);
+        for i in (1..v[0]).map(|i| i as usize) {
+            sm += (a[i - 1] > a[i]) as i32;
+        }
+
+        let n = (v[0] - 1) as usize;
+        for i in (0..v[0]).map(|i| i as usize) {
+            if sm == 0 { break; }
+            if a[i] > v[1] {
+                if i > 0 && ((a[i - 1] > a[i]) && (a[i - 1] <= v[1])) { sm -= 1 };
+                if i > 0 && ((a[i - 1] <= a[i]) && (a[i - 1] > v[1])) { sm += 1 };
+                if i < n && ((a[i] > a[i + 1]) && (v[1] <= a[i + 1])) { sm -= 1 };
+                if i < n && ((a[i] <= a[i + 1]) && (v[1] > a[i + 1])) { sm += 1 };
+
+                swap_value(&mut v[1], &mut a[i]);
+                cnt += 1;
+            }
+        }
+        if vec_is_sorted(&a) { return cnt; }
+        return -1;
+    }
+
+    pub fn solve() {
+        for _ in 0..(read_i32()) {
+            println!("{}", self::solve_one());
         }
     }
 }
@@ -101,7 +149,23 @@ fn main() {
         return t_jumps::solve();
     } else if task_name == "1455C" {
         return t_ping_pong::solve();
+    } else if task_name == "1455D" {
+        return sequence_and_swaps::solve();
     } else {
         println!("Problem not found");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{swap_value};
+
+    #[test]
+    fn swap_value_test() {
+        let (mut a, mut b) = (5, 6);
+
+        swap_value(&mut a, &mut b);
+        assert_eq!(a, 6);
+        assert_eq!(b, 5);
     }
 }
