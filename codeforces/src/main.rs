@@ -1,5 +1,7 @@
 use std::io;
 use std::env;
+use std::str::FromStr;
+use std::fmt::Debug;
 
 fn read_i32() -> i32 {
     let mut input = String::new();
@@ -7,7 +9,7 @@ fn read_i32() -> i32 {
     return input.trim().parse().unwrap();
 }
 
-fn read_vec_i32() -> Vec<i32> {
+fn read_vec_ixx<T>() -> Vec<T> where <T as FromStr>::Err: Debug, T: FromStr {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     return input
@@ -68,7 +70,7 @@ pub mod t_jumps {
 
 // 1455C
 pub mod t_ping_pong {
-    use crate::{read_i32, read_vec_i32};
+    use crate::{read_i32, read_vec_ixx};
 
     fn solve_one(a: i32, b: i32) -> (i32, i32) {
         if a == 0 { return (0, b); }
@@ -80,7 +82,7 @@ pub mod t_ping_pong {
     pub fn solve() {
         let t = read_i32();
         for _ in 0..t {
-            let inp = read_vec_i32();
+            let inp = read_vec_ixx();
             let (a, b) = self::solve_one(inp[0], inp[1]);
             println!("{} {}", a, b);
         }
@@ -102,10 +104,10 @@ fn swap_value<'a, T: Clone>(a: &'a mut T, b: &'a mut T) {
 
 // 1455D
 pub mod sequence_and_swaps {
-    use crate::{read_i32, read_vec_i32, vec_is_sorted, swap_value};
+    use crate::{read_i32, read_vec_ixx, vec_is_sorted, swap_value};
 
     fn solve_one() -> i32 {
-        let (mut v, mut a) = (read_vec_i32(), read_vec_i32());
+        let (mut v, mut a) = (read_vec_ixx(), read_vec_ixx());
         let (mut sm, mut cnt) = (0, 0);
         for i in (1..v[0]).map(|i| i as usize) {
             sm += (a[i - 1] > a[i]) as i32;
@@ -135,6 +137,49 @@ pub mod sequence_and_swaps {
     }
 }
 
+fn calculate_presum(vec: &Vec<i64>) -> Vec<i64> {
+    let mut result = vec![0];
+    if vec.len() == 0 { return result; }
+    for vec_i in vec {
+        result.push(result.last().unwrap().clone() + vec_i.clone());
+    }
+    result
+}
+
+// 231C
+pub mod to_add_or_not_to_add {
+    use crate::{read_vec_ixx, calculate_presum};
+
+    pub fn solve() {
+        let v: Vec<i64> = read_vec_ixx();
+        let k = v[1];
+        let mut a: Vec<i64> = read_vec_ixx();
+        a.sort();
+        let presum = calculate_presum(&a);
+        let mut best = (0, 0);
+        for i in 0..(a.len()) {
+            if (i + 1 != a.len()) && (a[i + 1] == a[i]) { continue; }
+            let (mut left, mut right, mut last_success) = (0, i as i64, 0);
+            while left <= right {
+                let mid: i64 = (right + left) / 2;
+                let sm: i64 = presum[i + 1] - presum[mid as usize];
+                let m = (i as i64) - mid + 1;
+                if m * a[i] - sm > k {
+                    left = mid + 1;
+                } else {
+                    right = mid - 1;
+                    last_success = m;
+                }
+            }
+            if best.0 < last_success {
+                best.0 = last_success;
+                best.1 = a[i].clone();
+            }
+        }
+        println!("{} {}", best.0, best.1);
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() != 2 {
@@ -151,6 +196,8 @@ fn main() {
         return t_ping_pong::solve();
     } else if task_name == "1455D" {
         return sequence_and_swaps::solve();
+    } else if task_name == "" {
+        return to_add_or_not_to_add::solve();
     } else {
         println!("Problem not found");
     }

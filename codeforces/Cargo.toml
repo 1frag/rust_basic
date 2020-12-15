@@ -4,6 +4,3 @@ description = "Solution for problems on codeforces.com"
 version = "0.1.0"
 authors = ["Aleksei Piskunov <piskunov.alesha@gmail.com>"]
 edition = "2018"
-
-[dependencies]
-rand = "0.6.0"
