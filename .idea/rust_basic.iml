@@ -5,7 +5,10 @@
       <sourceFolder url="file://$MODULE_DIR$/cf_preparator/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/codeforces/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/simple/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tarantool/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/qr_trav/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/qr_trav/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

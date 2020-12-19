@@ -1,11 +1,11 @@
 extern crate regex;
 
-use std::fs;
-use std::env;
-use std::cmp::Ordering;
-use regex::Regex;
-use std::process::Command;
 use colored::*;
+use regex::Regex;
+use std::cmp::Ordering;
+use std::env;
+use std::fs;
+use std::process::Command;
 
 fn fetch_problem_url() -> Option<String> {
     let args: Vec<String> = env::args().collect();
@@ -19,7 +19,9 @@ fn fetch_problem_url() -> Option<String> {
 fn fetch_libs(contents: &str) -> String {
     let mut result = "".to_string();
     for (_, line) in contents.lines().into_iter().enumerate() {
-        if line == "" { break; }
+        if line == "" {
+            break;
+        }
         result = format!("{}{}\n", result, line);
     }
     return result;
@@ -31,10 +33,14 @@ fn fetch_block(content: &str, mark: String) -> Option<String> {
     };
 
     let opt_ind = content.find(&mark);
-    if opt_ind.is_none() { return None; }
+    if opt_ind.is_none() {
+        return None;
+    }
     let mut ind = opt_ind.unwrap() as usize;
 
-    while !at_eq(ind, "\n") { ind -= 1; }
+    while !at_eq(ind, "\n") {
+        ind -= 1;
+    }
     ind += 1;
     let start = ind.clone();
 
@@ -44,7 +50,9 @@ fn fetch_block(content: &str, mark: String) -> Option<String> {
             brackets += 1;
             was = true;
         }
-        if at_eq(ind, "}") { brackets -= 1; }
+        if at_eq(ind, "}") {
+            brackets -= 1;
+        }
         ind += 1;
     }
     return Some(content[start..ind].to_string());
@@ -53,7 +61,9 @@ fn fetch_block(content: &str, mark: String) -> Option<String> {
 fn fetch_deps(content: &str, target: String) -> String {
     let re = Regex::new(r"use crate::\{(.+)}").unwrap();
     let cap = re.captures(&target);
-    if cap.is_none() { return "".to_string(); }
+    if cap.is_none() {
+        return "".to_string();
+    }
 
     return cap
         .unwrap()
@@ -68,22 +78,29 @@ fn fetch_deps(content: &str, target: String) -> String {
 fn make_main(target: &str) -> String {
     let re = Regex::new(r"pub mod (\w+) \{").unwrap();
     let cap = re.captures(&target);
-    if cap.is_none() { panic!("mod not found") }
+    if cap.is_none() {
+        panic!("mod not found")
+    }
     let name = cap.unwrap().get(1).unwrap().as_str();
 
-    format!(r"
+    format!(
+        r"
 fn main() {}
     {}::solve();
-{}", "{", name, "}")
+{}",
+        "{", name, "}"
+    )
 }
 
 fn compile(source_path: &str, compile_path: &str) {
     let cmd = format!("rustc {} -o {}", source_path, compile_path);
-    println!("{:?}", Command::new("sh")
-        .args(&["-c", &cmd])
-        .output()
-        .unwrap()
-        .stdout
+    println!(
+        "{:?}",
+        Command::new("sh")
+            .args(&["-c", &cmd])
+            .output()
+            .unwrap()
+            .stdout
     );
 }
 
@@ -91,17 +108,19 @@ fn copy_to_clipboard(t: &str) {
     Command::new("bash")
         .args(&["-c", &format!("echo -n '{}' | xsel -ib", t)])
         .output()
-        .unwrap().stdout;
+        .unwrap()
+        .stdout;
 }
 
 fn main() {
     let problem_ident_opt = fetch_problem_url();
-    if problem_ident_opt.is_none() { return; }
+    if problem_ident_opt.is_none() {
+        return;
+    }
     let problem_ident = problem_ident_opt.unwrap();
 
     let filename = "codeforces/src/main.rs";
-    let contents = fs::read_to_string(filename)
-        .expect("Something went wrong reading the file");
+    let contents = fs::read_to_string(filename).expect("Something went wrong reading the file");
 
     let mod_code_opt = fetch_block(&contents, problem_ident.clone());
     if mod_code_opt.is_none() {
@@ -119,8 +138,7 @@ fn main() {
 
     let source_path = format!("cf_preparator/gen/{}.rs", problem_ident);
     let compile_path = format!("cf_preparator/gen/{}", problem_ident);
-    fs::write(&source_path, code)
-        .expect("Something went wrong writing the file");
+    fs::write(&source_path, code).expect("Something went wrong writing the file");
     compile(&source_path, &compile_path);
 
     let mut invite = format!("cd cf_preparator/gen/ && ./{} > out.txt &", problem_ident);

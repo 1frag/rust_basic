@@ -3,4 +3,5 @@ members = [
     "cf_preparator",
     "codeforces",
     "simple",
+    "qr_trav",
 ]

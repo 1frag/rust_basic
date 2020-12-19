@@ -1,7 +1,7 @@
-use std::io;
 use std::env;
-use std::str::FromStr;
 use std::fmt::Debug;
+use std::io;
+use std::str::FromStr;
 
 fn read_i32() -> i32 {
     let mut input = String::new();
@@ -9,7 +9,11 @@ fn read_i32() -> i32 {
     return input.trim().parse().unwrap();
 }
 
-fn read_vec_ixx<T>() -> Vec<T> where <T as FromStr>::Err: Debug, T: FromStr {
+fn read_vec_ixx<T>() -> Vec<T>
+where
+    <T as FromStr>::Err: Debug,
+    T: FromStr,
+{
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
     return input
@@ -38,7 +42,7 @@ pub mod t_strange_functions {
 
 // 1455B
 pub mod t_jumps {
-    use crate::{read_i32};
+    use crate::read_i32;
 
     fn solve_one(x: i32) -> i32 {
         let mut left = 1;
@@ -47,15 +51,21 @@ pub mod t_jumps {
         while left <= right {
             let mid = (left + right) >> 1;
             let sum = (mid * mid + mid) >> 1;
-            if sum < x { left = mid + 1 };
+            if sum < x {
+                left = mid + 1
+            };
             if sum > x {
                 right = mid - 1;
                 last_success = mid
             };
-            if sum == x { return mid; };
+            if sum == x {
+                return mid;
+            };
         }
         let sum = (last_success * last_success + last_success) >> 1;
-        if sum == x + 1 { return last_success + 1; }
+        if sum == x + 1 {
+            return last_success + 1;
+        }
         return last_success;
     }
 
@@ -73,9 +83,15 @@ pub mod t_ping_pong {
     use crate::{read_i32, read_vec_ixx};
 
     fn solve_one(a: i32, b: i32) -> (i32, i32) {
-        if a == 0 { return (0, b); }
-        if a == 1 && b != 0 { return (0, b); }
-        if b == 0 { return (a, 0); }
+        if a == 0 {
+            return (0, b);
+        }
+        if a == 1 && b != 0 {
+            return (0, b);
+        }
+        if b == 0 {
+            return (a, 0);
+        }
         return (a - 1, b);
     }
 
@@ -91,7 +107,9 @@ pub mod t_ping_pong {
 
 fn vec_is_sorted(a: &Vec<i32>) -> bool {
     for i in 1..(a.len()) {
-        if a[i] < a[i - 1] { return false; }
+        if a[i] < a[i - 1] {
+            return false;
+        }
     }
     true
 }
@@ -104,7 +122,7 @@ fn swap_value<'a, T: Clone>(a: &'a mut T, b: &'a mut T) {
 
 // 1455D
 pub mod sequence_and_swaps {
-    use crate::{read_i32, read_vec_ixx, vec_is_sorted, swap_value};
+    use crate::{read_i32, read_vec_ixx, swap_value, vec_is_sorted};
 
     fn solve_one() -> i32 {
         let (mut v, mut a) = (read_vec_ixx(), read_vec_ixx());
@@ -115,18 +133,30 @@ pub mod sequence_and_swaps {
 
         let n = (v[0] - 1) as usize;
         for i in (0..v[0]).map(|i| i as usize) {
-            if sm == 0 { break; }
+            if sm == 0 {
+                break;
+            }
             if a[i] > v[1] {
-                if i > 0 && ((a[i - 1] > a[i]) && (a[i - 1] <= v[1])) { sm -= 1 };
-                if i > 0 && ((a[i - 1] <= a[i]) && (a[i - 1] > v[1])) { sm += 1 };
-                if i < n && ((a[i] > a[i + 1]) && (v[1] <= a[i + 1])) { sm -= 1 };
-                if i < n && ((a[i] <= a[i + 1]) && (v[1] > a[i + 1])) { sm += 1 };
+                if i > 0 && ((a[i - 1] > a[i]) && (a[i - 1] <= v[1])) {
+                    sm -= 1
+                };
+                if i > 0 && ((a[i - 1] <= a[i]) && (a[i - 1] > v[1])) {
+                    sm += 1
+                };
+                if i < n && ((a[i] > a[i + 1]) && (v[1] <= a[i + 1])) {
+                    sm -= 1
+                };
+                if i < n && ((a[i] <= a[i + 1]) && (v[1] > a[i + 1])) {
+                    sm += 1
+                };
 
                 swap_value(&mut v[1], &mut a[i]);
                 cnt += 1;
             }
         }
-        if vec_is_sorted(&a) { return cnt; }
+        if vec_is_sorted(&a) {
+            return cnt;
+        }
         return -1;
     }
 
@@ -137,28 +167,29 @@ pub mod sequence_and_swaps {
     }
 }
 
-fn calculate_presum(vec: &Vec<i64>) -> Vec<i64> {
-    let mut result = vec![0];
-    if vec.len() == 0 { return result; }
-    for vec_i in vec {
-        result.push(result.last().unwrap().clone() + vec_i.clone());
-    }
-    result
+fn calculate_presum<'a>(vec: &'a Vec<i64>) -> impl Iterator<Item = i64> + 'a {
+    let mut last = 0_i64;
+    (0..1).chain((*vec).iter().map(move |s| {
+        last += s;
+        last.clone()
+    }))
 }
 
 // 231C
 pub mod to_add_or_not_to_add {
-    use crate::{read_vec_ixx, calculate_presum};
+    use crate::{calculate_presum, read_vec_ixx};
 
     pub fn solve() {
         let v: Vec<i64> = read_vec_ixx();
         let k = v[1];
         let mut a: Vec<i64> = read_vec_ixx();
         a.sort();
-        let presum = calculate_presum(&a);
+        let presum: Vec<i64> = calculate_presum(&a).collect();
         let mut best = (0, 0);
         for i in 0..(a.len()) {
-            if (i + 1 != a.len()) && (a[i + 1] == a[i]) { continue; }
+            if (i + 1 != a.len()) && (a[i + 1] == a[i]) {
+                continue;
+            }
             let (mut left, mut right, mut last_success) = (0, i as i64, 0);
             while left <= right {
                 let mid: i64 = (right + left) / 2;
@@ -196,7 +227,7 @@ fn main() {
         return t_ping_pong::solve();
     } else if task_name == "1455D" {
         return sequence_and_swaps::solve();
-    } else if task_name == "" {
+    } else if task_name == "231C" {
         return to_add_or_not_to_add::solve();
     } else {
         println!("Problem not found");
@@ -205,7 +236,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::{swap_value};
+    use crate::swap_value;
 
     #[test]
     fn swap_value_test() {

@@ -1,8 +1,8 @@
-use std::env;
-use std::process::{Command, exit};
-use std::io;
 use rand::Rng;
 use std::collections::HashSet;
+use std::env;
+use std::io;
+use std::process::{exit, Command};
 
 fn cmd_hello() -> String {
     return "Hello, world!".to_string();
@@ -24,28 +24,38 @@ fn cmd_sum(args: Vec<String>) -> String {
 fn cmd_dirs() -> Vec<String> {
     fn listdir() -> Vec<String> {
         let vec_utf8output = Command::new("sh")
-            .args(&["-c", "find -maxdepth 1 -type d"]).output().unwrap().stdout;
+            .args(&["-c", "find -maxdepth 1 -type d"])
+            .output()
+            .unwrap()
+            .stdout;
 
         let ls_output_or_none: Option<String> = match String::from_utf8(vec_utf8output) {
             Ok(path) => Some(path),
             Err(_) => None,
         };
-        if ls_output_or_none.is_none() { exit(1) };
+        if ls_output_or_none.is_none() {
+            exit(1)
+        };
         let ls_output = ls_output_or_none.unwrap();
         let x: Vec<&str> = ls_output.split("\n").collect();
-        let v2: Vec<String> = x.iter().map(|s| { s.to_string() }).collect();
+        let v2: Vec<String> = x.iter().map(|s| s.to_string()).collect();
         return v2;
     }
 
     let lst = listdir();
     let mut result: Vec<String> = Vec::new();
-    println!("{}", match lst.len() - 2 {
-        0 => "There is no directories here:".to_string(),
-        1 => "There is only directory here:".to_string(),
-        _ => format!("There are {} directories here:", lst.len() - 2).to_string(),
-    });
+    println!(
+        "{}",
+        match lst.len() - 2 {
+            0 => "There is no directories here:".to_string(),
+            1 => "There is only directory here:".to_string(),
+            _ => format!("There are {} directories here:", lst.len() - 2).to_string(),
+        }
+    );
     for dir_name in lst {
-        if dir_name == "." || dir_name == "" { continue; }
+        if dir_name == "." || dir_name == "" {
+            continue;
+        }
         result.push(dir_name[2..].to_string());
     }
     result.sort();
@@ -61,13 +71,19 @@ enum AskAnswer {
 
 fn user_asker(ans: AskAnswer) -> Option<i32> {
     match ans {
-        AskAnswer::Start => { println!("Try to guess the number!") }
+        AskAnswer::Start => {
+            println!("Try to guess the number!")
+        }
         AskAnswer::Equals => {
             println!("You are right!");
             return None;
         }
-        AskAnswer::Less => { println!("The secret number should be less"); }
-        AskAnswer::Greater => { println!("The secret number should be greater"); }
+        AskAnswer::Less => {
+            println!("The secret number should be less");
+        }
+        AskAnswer::Greater => {
+            println!("The secret number should be greater");
+        }
     }
 
     loop {
@@ -75,8 +91,12 @@ fn user_asker(ans: AskAnswer) -> Option<i32> {
         io::stdin().read_line(&mut guess).unwrap();
         guess = guess.strip_suffix("\n").unwrap().to_string();
         match guess.parse::<i32>() {
-            Ok(numb) => { return Some(numb); }
-            Err(e) => { println!("Please, input valid number [{}]", e); }
+            Ok(numb) => {
+                return Some(numb);
+            }
+            Err(e) => {
+                println!("Please, input valid number [{}]", e);
+            }
         }
     }
 }
@@ -90,7 +110,9 @@ fn cmd_guess(mut ask: impl FnMut(AskAnswer) -> Option<i32>) -> String {
             last_numb = ask(AskAnswer::Start);
             first = false;
         }
-        if last_numb.is_none() { return "".to_string(); };
+        if last_numb.is_none() {
+            return "".to_string();
+        };
 
         if last_numb.unwrap() == secret_number {
             last_numb = ask(AskAnswer::Equals);
@@ -105,8 +127,10 @@ fn cmd_guess(mut ask: impl FnMut(AskAnswer) -> Option<i32>) -> String {
 fn cmd_primes(n: i32) -> String {
     let mut complex: HashSet<i32> = HashSet::new();
     for i in 2..n {
-        if complex.contains(&i) { continue };
-        for j in (i*i..n).step_by(i as usize) {
+        if complex.contains(&i) {
+            continue;
+        };
+        for j in (i * i..n).step_by(i as usize) {
             complex.insert(j);
         }
     }
@@ -128,7 +152,14 @@ fn main() {
     } else if args[1] == "guess" {
         println!("{}", cmd_guess(user_asker));
     } else if args[1] == "primes" {
-        println!("{}", cmd_primes(if args.len() == 3 { args[2].parse().unwrap() } else { 100 }));
+        println!(
+            "{}",
+            cmd_primes(if args.len() == 3 {
+                args[2].parse().unwrap()
+            } else {
+                100
+            })
+        );
     } else {
         println!("undefined action for args[0]={}", args[1]);
     }
@@ -136,7 +167,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::{cmd_hello, cmd_sum, cmd_dirs, cmd_guess, AskAnswer, cmd_primes};
+    use crate::{cmd_dirs, cmd_guess, cmd_hello, cmd_primes, cmd_sum, AskAnswer};
 
     #[test]
     fn simple_test() {
@@ -158,9 +189,7 @@ mod tests {
 
     #[test]
     fn dirs_test() {
-        assert_eq!(
-            cmd_dirs(), ["src"]
-        );
+        assert_eq!(cmd_dirs(), ["src"]);
     }
 
     #[test]
@@ -176,12 +205,14 @@ mod tests {
                     correct = true;
                     return None;
                 }
-                AskAnswer::Less => { right = last_asked.unwrap() - 1 }
-                AskAnswer::Greater => { left = last_asked.unwrap() + 1 }
+                AskAnswer::Less => right = last_asked.unwrap() - 1,
+                AskAnswer::Greater => left = last_asked.unwrap() + 1,
                 _ => {}
             };
             last_asked = Some((left + right) / 2);
-            if left <= right { return last_asked; }
+            if left <= right {
+                return last_asked;
+            }
             return None;
         };
         cmd_guess(test_asker);
@@ -191,7 +222,8 @@ mod tests {
     #[test]
     fn primes_test() {
         assert_eq!(
-            cmd_primes(42), "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]"
+            cmd_primes(42),
+            "[2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41]"
         );
     }
 }
