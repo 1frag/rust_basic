@@ -1,14 +1,17 @@
-use base64;
-use qrcode_generator::QrCodeEcc;
-use rand::Rng;
-use tide::http::Cookie;
-use tide::{Request, Middleware};
-use uuid::Uuid;
-use mobc;
-use serde_json::{json};
-use async_trait::async_trait;
-use mobc::Manager;
-use redis;
+use {
+    async_trait::async_trait,
+    base64,
+    mobc::Manager,
+    qrcode_generator::QrCodeEcc,
+    rand::Rng,
+    redis,
+    serde_json::json,
+    tide::{
+        Request, Middleware,
+        http::Cookie,
+    },
+    uuid::Uuid,
+};
 
 struct Site<'a> {
     proto: &'a str,
@@ -20,8 +23,11 @@ impl Site<'_> {
     fn host(&self) -> String {
         format!("{}:{}", self.hostname, self.port)
     }
-    fn at<T: std::fmt::Display>(&self, path: T) -> String {
-        format!("{}://{}/{}", self.proto, self.host(), path)
+
+    fn at(&self, path: &str, overridden_hostname: Option<&str>) -> String {
+        let host = &(self.host() + "/");
+        let host = overridden_hostname.unwrap_or(host);
+        format!("{}://{}{}", self.proto, host, path)
     }
 }
 
@@ -64,8 +70,8 @@ fn add_start_again_html(resp: &mut tide::Response) {
 </html>"##);
 }
 
-fn add_puzzle_into_html(resp: &mut tide::Response, answer: &str) {
-    let next_path = CURRENT_SITE.at(answer);
+fn add_puzzle_into_html(resp: &mut tide::Response, answer: &str, host: Option<&str>) {
+    let next_path = CURRENT_SITE.at(answer, host);
     let qr_code = qrcode_generator::to_png_to_vec(
         next_path, QrCodeEcc::Low, 1024
     ).unwrap();
@@ -80,7 +86,7 @@ fn add_puzzle_into_html(resp: &mut tide::Response, answer: &str) {
     <title>Start</title>
 </head>
 <body>
-    <img src="data:image/jpeg;base64, {}" height="300px">
+    <img src="data:image/jpeg;base64, {}" height="300px" alt="qr_code">
 </body>
 </html>"##, qr_code));
 }
@@ -128,7 +134,7 @@ async fn main_handler(req: Request<AppState>) -> tide::Result {
         add_start_again_html(&mut resp);
     } else {
         let answer = format!("/step_{}", rand::thread_rng().gen_range(100000..1000000));
-        add_puzzle_into_html(&mut resp, &answer);
+        add_puzzle_into_html(&mut resp, &answer, req.local_addr());
         expect_in_future(&req.state(), &user.uuid, &answer).await;
     }
     Ok(resp)
