@@ -10,6 +10,7 @@ use {
         Request, Middleware,
         http::Cookie,
     },
+    regex::Regex,
     uuid::Uuid,
 };
 
@@ -73,7 +74,7 @@ fn add_start_again_html(resp: &mut tide::Response) {
 fn add_puzzle_into_html(resp: &mut tide::Response, answer: &str, host: Option<&str>) {
     let next_path = CURRENT_SITE.at(answer, host);
     let qr_code = qrcode_generator::to_png_to_vec(
-        next_path, QrCodeEcc::Low, 1024
+        next_path, QrCodeEcc::Low, 1024,
     ).unwrap();
     let qr_code = base64::encode(qr_code);
 
@@ -98,7 +99,7 @@ async fn is_incorrect_answer(state: &AppState, user: &str, path: &str) -> Option
         .arg(user)
         .query_async(&mut conn)
         .await.unwrap();
-    if user_data.is_none() { return None }
+    if user_data.is_none() { return None; }
     let user_data: serde_json::Value = serde_json::from_str(&user_data?).ok()?;
     let user_data = user_data.get("path").unwrap().as_str()?;
     println!(" path={:?} user_data['path']={:?}", &path, user_data);
@@ -129,7 +130,7 @@ async fn main_handler(req: Request<AppState>) -> tide::Result {
     let mut resp = tide::Response::new(200);
     resp.insert_header("Content-Type", "text/html");
     if MileStoneTag::Step == *mst && is_incorrect_answer(
-        &req.state(), &user.uuid, &req.url().path()
+        &req.state(), &user.uuid, &req.url().path(),
     ).await.unwrap_or(true) {
         add_start_again_html(&mut resp);
     } else {
@@ -167,7 +168,6 @@ impl<State: Clone + Send + Sync + 'static> Middleware<State> for AuthenticateMid
                 }
             }
         });
-        use regex::Regex;
         let re = Regex::new(r"/(start)|(step_\d+)").unwrap();
         let fs = match re.captures(req.url().path()) {
             Some(t) => {
@@ -175,7 +175,8 @@ impl<State: Clone + Send + Sync + 'static> Middleware<State> for AuthenticateMid
                     Some(_) => MileStoneTag::Step,
                     None => MileStoneTag::Start,
                 }
-            }, None => MileStoneTag::Other
+            }
+            None => MileStoneTag::Other
         };
         req.set_ext(fs);
 
@@ -200,7 +201,12 @@ impl Manager for RedisManager {
         Ok(conn)
     }
 
-    async fn check(&self, conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        Ok(conn)
+    async fn check(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
+        let x: redis::RedisResult<String> = redis::cmd("PING")
+            .arg("hi")
+            .query_async(&mut conn)
+            .await;
+        if x.is_ok() { return Ok(conn); }
+        Err(x.unwrap_err())
     }
 }

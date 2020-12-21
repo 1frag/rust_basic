@@ -10,9 +10,9 @@ fn read_i32() -> i32 {
 }
 
 fn read_vec_ixx<T>() -> Vec<T>
-where
-    <T as FromStr>::Err: Debug,
-    T: FromStr,
+    where
+        <T as FromStr>::Err: Debug,
+        T: FromStr,
 {
     let mut input = String::new();
     io::stdin().read_line(&mut input).unwrap();
@@ -167,7 +167,7 @@ pub mod sequence_and_swaps {
     }
 }
 
-fn calculate_presum<'a>(vec: &'a Vec<i64>) -> impl Iterator<Item = i64> + 'a {
+fn calculate_presum<'a>(vec: &'a Vec<i64>) -> impl Iterator<Item=i64> + 'a {
     let mut last = 0_i64;
     (0..1).chain((*vec).iter().map(move |s| {
         last += s;
@@ -208,6 +208,128 @@ pub mod to_add_or_not_to_add {
             }
         }
         println!("{} {}", best.0, best.1);
+    }
+}
+
+// 1462D
+pub mod add_to_neighbour_and_remove {
+    use crate::{read_i32, read_vec_ixx};
+
+    pub fn solve() {
+        let _: Vec<()> = (0..read_i32()).map(|_| {
+            let n = read_i32() as u32;
+            let a: Vec<i64> = read_vec_ixx();
+            let total: i64 = a.iter().sum();
+            let mut cur_sum = 0_i64;
+            for i in 0_u32..n {
+                let mut cnt = 1;
+                cur_sum += a[i as usize];
+                if total % cur_sum == 0 {
+                    let (mut j, mut check_sum) = (i + 1, 0);
+                    while j < n {
+                        check_sum += a[j as usize];
+                        j += 1;
+                        if check_sum == cur_sum {
+                            check_sum = 0;
+                            cnt += 1;
+                        } else if check_sum > cur_sum {
+                            continue;
+                        }
+                    }
+                    if check_sum != 0 {
+                        continue;
+                    }
+                    println!("{}", (n as i64) - cnt);
+                    return;
+                }
+            }
+        }).collect();
+    }
+}
+
+
+// 1462F
+pub mod the_treasure_of_the_segments {
+    use crate::{read_i32, read_vec_ixx};
+    use std::{
+        cmp::Ordering, convert::TryInto,
+    };
+
+    struct CbData<'a> {
+        cmp_res: Ordering,
+        mid: &'a mut i32,
+        n: &'a i32,
+        left: &'a mut i32,
+        right: &'a mut i32,
+        last: &'a mut i32,
+    }
+
+    fn cb_less(data: &mut CbData) {
+        match data.cmp_res {
+            Ordering::Less => {
+                *data.last = *data.mid + 1;
+                *data.left = *data.mid + 1;
+            }
+            _ => { *data.right = *data.mid - 1 }
+        }
+    }
+
+    fn cb_greater(data: &mut CbData) {
+        match data.cmp_res {
+            Ordering::Greater => {
+                *data.last = *data.n - *data.mid;
+                *data.right = *data.mid - 1;
+            }
+            _ => { *data.left = *data.mid + 1 }
+        }
+    }
+
+    fn bin_search<T>(x: i32, a: &Vec<i32>, mut callback: T) -> i32
+        where T: FnMut(&mut CbData)
+    {
+        let mut data = CbData {
+            cmp_res: Ordering::Less,
+            mid: &mut 0,
+            n: &(a.len() as i32),
+            left: &mut 0,
+            right: &mut ((a.len() - 1) as i32),
+            last: &mut 0,
+        };
+        while data.left <= data.right {
+            *data.mid = ((*data.left + *data.right) >> 1).try_into().unwrap();
+            data.cmp_res = a[*data.mid as usize].cmp(&x);
+            callback(&mut data);
+        }
+        *data.last
+    }
+
+    pub fn solve() {
+        (0..read_i32()).for_each(|_| {
+            let n = read_i32();
+            let mut a: Vec<(i32, i32)> = Vec::with_capacity(n as usize);
+            (0..n).for_each(|_| {
+                a.push({
+                    let v = read_vec_ixx();
+                    (v[0], v[1])
+                })
+            });
+
+            let mut by_left: Vec<i32> = a.iter().map(|x| x.0).collect();
+            by_left.sort();
+
+            let mut by_right: Vec<i32> = a.iter().map(|x| x.1).collect();
+            by_right.sort();
+
+            let mut mn = n;
+            for (lk, rk) in a {
+                mn = mn.min({
+                    let c1 = self::bin_search(lk, &by_right, self::cb_less);
+                    let c2 = self::bin_search(rk, &by_left, self::cb_greater);
+                    c1 + c2
+                })
+            }
+            println!("{:?}", mn);
+        })
     }
 }
 
